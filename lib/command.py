@@ -22,8 +22,16 @@ class Command:
         if self.answers[comp_id] is not None:
             raise ValueError
         self.answers[comp_id] = answer
-        if all [x is not None for x in self.answers.values()]:
+        if all([x is not None for x in self.answers.values()]):
             self.complete = True
 
     def be_handled(self):
         self.handler.handle(self)
+
+    def to_dict(self):
+        return {'command_id': self.id,
+                'timestamp': self.timestamp,
+                'to': list(self.to),
+                'action': self.action.name,
+                'timeout': self.action.timeout,
+                'args': self.args}
