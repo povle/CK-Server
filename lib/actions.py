@@ -1,11 +1,12 @@
-from types import Type
+from .types import Type
 
 class Action:
-    def __init__(self, name: str, description='', answer_types={},
-                 arg_types={}, admin_only=False, timeout=10):
+    def __init__(self, name: str, description='', answer_types=set(),
+                 arg_types=set(), admin_only=False, timeout=10):
         self.name = name
         self.arg_types = arg_types
-        self.answer_types = answer_types + {Type.ERROR, Type.OK}
+        self.answer_types = answer_types
+        self.answer_types.update({Type.ERROR, Type.OK})
         self.admin_only = admin_only
         self.description = description
         self.timeout = timeout
@@ -31,7 +32,7 @@ actions = [
            description="сменить обои (новые прислать документом)"),
     Action('upload', arg_types={Type.DOCUMENT},
            description='загрузить прикреплённые документы в папку "Задания"'),
-    Action('move', arg_type={Type.TEXT},
+    Action('move', arg_types={Type.TEXT},
            description='переместить всё содержимое папки "Задания" в папку "Старое"'),
     Action('altf', description="alt + f4"),
     Action('volume', description="выключить звук"),

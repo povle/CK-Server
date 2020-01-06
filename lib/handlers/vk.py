@@ -1,4 +1,4 @@
-from .. import Handler, Type, actions, Command
+from .. import Handler, Type, Command
 from vk_api.upload import VkUpload
 import vk_api
 import time
@@ -8,32 +8,32 @@ import base64
 import io
 
 class VkHandler(Handler):
-    def __init__(self, token, secret):
-        super().__init__(answer_types={Type.TEXT, Type.PHOTO, Type.Document},
-                         arg_types={Type.TEXT, Type.PHOTO, Type.Document})
+    def __init__(self, token, secret, group_id):
+        super().__init__(answer_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT},
+                         arg_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT})
         self.secret = secret
         self.token = token
-        self.actions = actions
-        self.builtins = {'help': self.help}
         self.vk_session = vk_api.VkApi(token=self.token)
         self.vk = self.vk_session.get_api()
+        self.gr_id = group_id
 
     def send(self, text, to, attachments=[], photos=[], documents=[]):
         _attachments = []
+        attachments = attachments.copy()
+        if photos or documents:
+            upload = vk_api.VkUpload(self.vk)
+            if photos:
+                for photo in upload.photo_messages(photos=photos):
+                    _attachments.append(f"photo{photo['owner_id']}_{photo['id']}")
+            for doc in documents:
+                attachments.append(upload.document_message(doc, peer_id=to))
+
         for doc in attachments:
             d = doc[doc['type']]
             s = f"{doc['type']}{d['owner_id']}_{d['id']}"
             if 'access_key' in d:
                 s += '_' + d['access_key']
             _attachments.append(s)
-
-        if photos or documents:
-            upload = vk_api.VkUpload(self.vk_session)
-            if photos:
-                for photo in upload.photo_messages(photos=photos):
-                    _attachments.append(f"photo{photo['owner_id']}_{photo['id']}")
-            for doc in documents:
-                _attachments.append(VkUpload(self.vk).document_wall(doc, group_id=self.gr_id))
 
         if not text and not _attachments:
             text = 'empty'
@@ -46,7 +46,7 @@ class VkHandler(Handler):
             time.sleep(0.4)
             self.send(text[4000:], to)
 
-    def parse(self, raw):
+    def initial_parse(self, raw):
         if raw.get('type') != 'message_new':
             raise ValueError('wrong event type')
         if raw.get('secret') != self.secret:
@@ -65,7 +65,7 @@ class VkHandler(Handler):
         if parsed['args']:
             args.append({'type': 'text', 'text': parsed['args']})
 
-        for att in msg.attachments:
+        for att in msg.get('attachments'):
             if att['type'] == 'photo':
                 _type = 'photo'
                 photo = att['photo']
@@ -81,24 +81,15 @@ class VkHandler(Handler):
                 _dict.update({'title': title})
             args.append(_dict)
 
-        if parsed['action'] in self.builtins:
-            command = Command(self, None, msg.peer_id, [-1], args)
-            command.add_answer(-1, self.builtins[parsed['action']](args))
-        else:
-            action = [x for x in self.actions if x.name == parsed['action']]
-            if action:
-                action = action[0]
-            else:
-                return
-            command = Command(self, action, msg.peer_id, parsed['ids'], args)
-        return command
+        return {'action': parsed['action'], 'sender': msg['peer_id'],
+                'to': parsed['ids'], 'args': args, 'excepts': parsed['excepts']}
 
     def handle(self, command: Command):
         text = []
         photos = []
         documents = []
-        for answer in sorted(command.answers, key=lambda x: x['comp_id']):
-            _text = f"answer['comp_id']: " if len(command.to) > 1 else ''
+        for cid, answer in sorted(command.answers.items()):
+            _text = f"{cid}: " if len(command.to) > 1 else ''
             _photos = []
             _documents = []
             if answer['status'] == 'ok':
@@ -110,7 +101,8 @@ class VkHandler(Handler):
                         _photos.append(io.BytesIO(base64.b64decode(pl['data'])))
                     elif _type == 'document':
                         f = io.BytesIO(base64.b64decode(pl['data']))
-                        f.name = pl.get('title', '')
+                        if pl.get('title'):
+                            f.name = pl['title']
                         _documents.append(f)
             elif answer['status'] == 'error':
                 _text += f"ERROR: {answer.get('message')}"
@@ -122,10 +114,10 @@ class VkHandler(Handler):
                 photos += _photos
                 documents += _documents
         if text or photos or documents:
-            self.send(text, command.sender,
+            self.send('\n'.join(text), command.sender,
                       documents=documents, photos=photos)
 
-    def parse_text(text):
+    def parse_text(self, text):
         r = re.fullmatch('(?P<ids>(?:(?:all|[0-9]+) )+)?'
                          '(?:except )?'
                          '(?P<excepts>(?<=except )(?:[0-9]+ ?)*)?'
@@ -137,7 +129,9 @@ class VkHandler(Handler):
 
         if r.group('ids') is not None:
             ids = r.group('ids').split()
-            ids = [id.casefold() for id in ids]
+            ids = [int(id.casefold()) for id in ids] #FIXME
+        else:
+            ids = []
 
         if r.group('excepts') is None:
             excepts = []
@@ -150,23 +144,3 @@ class VkHandler(Handler):
         args = r.group('args')
 
         return {'ids': ids, 'excepts': excepts, 'action': action, 'args': args}
-
-    #------------------------------BUILTINS------------------------------------
-    def help(self, command):
-        message = ''
-        text = ''
-        for arg in command.args:
-            if arg['type'] == 'text':
-                text += arg['text']
-        for f in self.actions:
-            doc = f.description
-            if doc is not None and (text != '-a' and not f.admin_only)\
-                    or (text == '-a' and f.admin_only):
-                message += f'•{f.name} - {doc}\n'
-        return {'comp_id': None,
-                'command_id': command.id,
-                'timestamp': time.time(),
-                'status': 'ok',
-                'payload': [{'type': 'text',
-                            'text': message}]
-                }
