@@ -8,7 +8,7 @@ def help(args=[]):
             text += arg['text']
     for f in actions:
         doc = f.description
-        if doc is not None and (text != '-a' and not f.admin_only)\
+        if doc and (text != '-a' and not f.admin_only)\
                 or (text == '-a' and f.admin_only):
             message += f'•{f.name} - {doc}\n'
     return [{'type': 'text',

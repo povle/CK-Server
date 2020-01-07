@@ -11,7 +11,8 @@ class DirectHandler(Handler):
             raise ValueError #FIXME: AuthError
         parsed = raw['command']
         return {'action': parsed['action'], 'sender': 0,
-                'to': parsed['to'], 'args': parsed['args'], 'excepts': parsed.get('excepts', [])}
+                'ids': parsed['ids'], 'room': parsed['room'],
+                'args': parsed['args'], 'excepts': parsed.get('excepts', [])}
 
     def handle(self, command: Command):
         return command.answers

@@ -16,18 +16,23 @@ socketio = SocketIO(app)
 commands = set()
 connected = {}
 
-vk_handler = VkHandler(config.vk_token, config.vk_secret, config.vk_gr_id)
+vk_handler = VkHandler(config.vk_token, config.vk_secret)
 direct_handler = DirectHandler('test') #FIXME: secure token
 
 def handle(handler: Handler, raw: dict):
     global commands
     command = handler.parse(raw)
+    if command.room == 'default':
+        command.room = config.default_room
+    if not command.ready_for_dispatch:
+        command.to = config.rooms[command.room]
     if command.handled:
         return command
     commands.add(command)
     for cid in command.to:
         if cid in connected:
             socketio.emit('command', command.to_dict(), room=connected[cid])
+            command.sent_to.add(cid)
         else:
             command.add_answer(cid, {'comp_id': cid,
                                      'command_id': command.id,
@@ -46,7 +51,6 @@ def handle(handler: Handler, raw: dict):
                                      'message': 'Timeout',
                                      'exception': None,
                                      'traceback': None})
-    #socketio.close_room(command.id)
     commands.discard(command)
     return command
 
@@ -69,14 +73,15 @@ class Dispatch(Namespace):
         #TODO: authentification (token?)
         global connected
         sid = request.sid
-        cid = int(request.args.get('id')) #client's local id
+        cid = request.args.get('id') #client's local id
+        if not cid or cid in connected or cid not in config.rooms['all']:
+            raise ConnectionRefusedError('bad cid')
         logger.info(f'connected cid={cid} sid={sid}')
-        if not cid or cid in connected:
-            raise ConnectionRefusedError
         connected[cid] = sid
         for c in commands:
             if c.is_awaiting_dispatch(cid):
                 emit('command', c.to_dict())
+                c.sent_to.add(cid)
 
     def on_disconnect(self):
         global connected

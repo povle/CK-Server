@@ -1,5 +1,4 @@
 from .. import Handler, Type, Command
-from vk_api.upload import VkUpload
 import vk_api
 import time
 import re
@@ -8,14 +7,13 @@ import base64
 import io
 
 class VkHandler(Handler):
-    def __init__(self, token, secret, group_id):
+    def __init__(self, token, secret):
         super().__init__(answer_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT},
                          arg_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT})
         self.secret = secret
         self.token = token
         self.vk_session = vk_api.VkApi(token=self.token)
         self.vk = self.vk_session.get_api()
-        self.gr_id = group_id
 
     def send(self, text, to, attachments=[], photos=[], documents=[]):
         _attachments = []
@@ -82,14 +80,17 @@ class VkHandler(Handler):
             args.append(_dict)
 
         return {'action': parsed['action'], 'sender': msg['peer_id'],
-                'to': parsed['ids'], 'args': args, 'excepts': parsed['excepts']}
+                'ids': parsed['ids'], 'room': parsed['room'],
+                'args': args, 'excepts': parsed['excepts']}
 
     def handle(self, command: Command):
         text = []
         photos = []
         documents = []
-        for cid, answer in sorted(command.answers.items()):
-            _text = f"{cid}: " if len(command.to) > 1 else ''
+        room = command.room
+        for rcid, answer in sorted(command.answers.items(), key=lambda x: int(x[0].split('.')[-1])):
+            cid = rcid.split('.')[-1]
+            _text = f"{cid if room != 'all' else rcid}: " if len(command.to) > 1 else ''
             _photos = []
             _documents = []
             if answer['status'] == 'ok':
@@ -118,7 +119,8 @@ class VkHandler(Handler):
                       documents=documents, photos=photos)
 
     def parse_text(self, text):
-        r = re.fullmatch('(?P<ids>(?:(?:all|[0-9]+) )+)?'
+        r = re.fullmatch('(?:[рrкk](?P<room>(all|[0-9]+)) )?'
+                         '(?P<ids>(?:(?:all|[0-9]+) )+)?'
                          '(?:except )?'
                          '(?P<excepts>(?<=except )(?:[0-9]+ ?)*)?'
                          '(?P<action>[a-z_]+)'
@@ -127,9 +129,12 @@ class VkHandler(Handler):
         if r is None:
             raise SyntaxError('Синтаксис: id [except id] command [args]')
 
+        room = r.group('room')
+        if room is None:
+            room = 'default'
+
         if r.group('ids') is not None:
             ids = r.group('ids').split()
-            ids = [int(id.casefold()) for id in ids] #FIXME
         else:
             ids = []
 
@@ -143,4 +148,4 @@ class VkHandler(Handler):
 
         args = r.group('args')
 
-        return {'ids': ids, 'excepts': excepts, 'action': action, 'args': args}
+        return {'ids': ids, 'excepts': excepts, 'action': action, 'args': args, 'room': room}
