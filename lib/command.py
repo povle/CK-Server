@@ -1,7 +1,6 @@
 import time
 import secrets
 from .actions import Action
-#FIXME: to - полные id получателей, ids - номера (без комнаты)
 class Command:
     def __init__(self, handler, action: Action, sender, ids, room, excepts=[], args=[]):
         self.handler = handler
@@ -33,7 +32,10 @@ class Command:
         self.answers[comp_id] = answer
         if all([x is not None for x in self.answers.values()]):
             self.complete = True
-            self.be_handled()
+            if not self.handled:
+                self.be_handled()
+            else:
+                self.handler.handle_late(self, comp_id)
 
     @property
     def broadcast(self):

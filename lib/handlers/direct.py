@@ -16,3 +16,6 @@ class DirectHandler(Handler):
 
     def handle(self, command: Command):
         return command.answers
+
+    def handle_late(self, command: Command, cid: str):
+        pass

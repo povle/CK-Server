@@ -63,7 +63,7 @@ class Handler(ABC):
         '''Aggregate all of the responses to the command and send them back if necessary'''
         pass
 
-    #@abstractmethod
-    #def handle_late(self, command: Command, cid: str):
-    #    '''Send one answer separately'''
-    #    pass
+    @abstractmethod
+    def handle_late(self, command: Command, cid: str):
+        '''Send one answer separately'''
+        pass

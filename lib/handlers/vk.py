@@ -84,11 +84,14 @@ class VkHandler(Handler):
                 'args': args, 'excepts': parsed['excepts']}
 
     def handle(self, command: Command):
+        def key(x):
+            s = x[0].split('.')
+            return tuple(s[:-1]+[int(s[-1])])
         text = []
         photos = []
         documents = []
         room = command.room
-        for rcid, answer in sorted(command.answers.items(), key=lambda x: int(x[0].split('.')[-1])):
+        for rcid, answer in sorted(command.answers.items(), key=key):
             cid = rcid.split('.')[-1]
             _text = f"{cid if room != 'all' else rcid}: " if len(command.to) > 1 else ''
             _photos = []
@@ -114,6 +117,42 @@ class VkHandler(Handler):
                 text.append(_text)
                 photos += _photos
                 documents += _documents
+        if text or photos or documents:
+            self.send('\n'.join(text), command.sender,
+                      documents=documents, photos=photos)
+
+    def handle_late(self, command: Command, cid: str):
+        text = []
+        photos = []
+        documents = []
+        room = command.room
+        rcid = cid
+        cid = rcid.split('.')[-1]
+        _text = f"{cid if room != 'all' else rcid} (late): " if len(command.to) > 1 else ''
+        _photos = []
+        _documents = []
+        answer = command.answers[rcid]
+        if answer['status'] == 'ok':
+            for pl in answer.get('payload', []):
+                _type = pl['type']
+                if _type == 'text':
+                    _text += pl['text']
+                elif _type == 'photo':
+                    _photos.append(io.BytesIO(base64.b64decode(pl['data'])))
+                elif _type == 'document':
+                    f = io.BytesIO(base64.b64decode(pl['data']))
+                    if pl.get('title'):
+                        f.name = pl['title']
+                    _documents.append(f)
+        elif answer['status'] == 'error':
+            _text += f"ERROR: {answer.get('message')}"
+        if _photos or _documents:
+            self.send(_text, command.sender,
+                      documents=_documents, photos=_photos)
+        else:
+            text.append(_text)
+            photos += _photos
+            documents += _documents
         if text or photos or documents:
             self.send('\n'.join(text), command.sender,
                       documents=documents, photos=photos)
