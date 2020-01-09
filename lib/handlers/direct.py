@@ -1,4 +1,4 @@
-from .. import Handler, Type, Command
+from .. import Handler, Type, Command, AuthError
 
 class DirectHandler(Handler):
     def __init__(self, secret):
@@ -8,7 +8,7 @@ class DirectHandler(Handler):
 
     def initial_parse(self, raw: dict):
         if raw.get('secret') != self.secret:
-            raise ValueError #FIXME: AuthError
+            raise AuthError
         parsed = raw['command']
         return {'action': parsed['action'], 'sender': 0,
                 'ids': parsed['ids'], 'room': parsed['room'],

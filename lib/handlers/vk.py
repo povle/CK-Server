@@ -1,4 +1,4 @@
-from .. import Handler, Type, Command
+from .. import Handler, Type, Command, AuthError
 import vk_api
 import time
 import re
@@ -48,7 +48,7 @@ class VkHandler(Handler):
         if raw.get('type') != 'message_new':
             raise ValueError('wrong event type')
         if raw.get('secret') != self.secret:
-            raise ValueError('wrong secret')
+            raise AuthError('wrong secret')
 
         msg = raw.get('object')
         if not msg:
