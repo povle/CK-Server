@@ -39,5 +39,7 @@ actions = [
     Action('bin', description="очистить корзину"),
     Action('d'),
     Action('status', answer_types={Type.TEXT}, description="статус"),
+    Action('test', answer_types={Type.TEXT}, description="test"),
+    Action('version', answer_types={Type.TEXT}, description="версия клиента"),
     Action('quit', description="остановить бота")
 ]

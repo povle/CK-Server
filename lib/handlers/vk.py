@@ -1,4 +1,5 @@
-from .. import Handler, Type, Command, AuthError
+from lib import Handler, Type, Command, AuthError
+from lib.utils import vk_keyboard
 import vk_api
 import time
 import re
@@ -8,14 +9,17 @@ import io
 
 class VkHandler(Handler):
     def __init__(self, token, secret):
-        super().__init__(answer_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT},
+        super().__init__(answer_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT, Type.VK_KEYBOARD},
                          arg_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT})
         self.secret = secret
         self.token = token
         self.vk_session = vk_api.VkApi(token=self.token)
         self.vk = self.vk_session.get_api()
+        self.aliases = {}
+        self.aliases.update(vk_keyboard.keyboard.aliases)
+        self.aliases.update(vk_keyboard.admin_keyboard.aliases)
 
-    def send(self, text, to, attachments=[], photos=[], documents=[]):
+    def send(self, text, to, attachments=[], photos=[], documents=[], keyboard=None):
         _attachments = []
         attachments = attachments.copy()
         if photos or documents:
@@ -39,7 +43,7 @@ class VkHandler(Handler):
 
         rd_id = vk_api.utils.get_random_id()
         self.vk.messages.send(peer_id=to, random_id=rd_id, message=text[:4000],
-                              attachment=','.join(_attachments))
+                              attachment=','.join(_attachments), keyboard=keyboard)
         if len(text) > 4000:
             time.sleep(0.4)
             self.send(text[4000:], to)
@@ -54,10 +58,8 @@ class VkHandler(Handler):
         if not msg:
             raise ValueError('no object')
 
-        text = msg.get('text')
-        if not text:
-            raise SyntaxError
-
+        text = msg.get('text', '')
+        text = self.aliases.get(text, text)
         parsed = self.parse_text(text)
         args = []
         if parsed['args']:
@@ -79,9 +81,12 @@ class VkHandler(Handler):
                 _dict.update({'title': title})
             args.append(_dict)
 
-        return {'action': parsed['action'], 'sender': msg['peer_id'],
-                'ids': parsed['ids'], 'room': parsed['room'],
-                'args': args, 'excepts': parsed['excepts']}
+        return {'action': parsed['action'],
+                'ids': parsed['ids'],
+                'room': parsed['room'],
+                'args': args,
+                'excepts': parsed['excepts']
+                }
 
     def handle(self, command: Command):
         def key(x):
@@ -96,6 +101,7 @@ class VkHandler(Handler):
             _text = f"{cid if room != 'all' else rcid}: " if len(command.to) > 1 else ''
             _photos = []
             _documents = []
+            keyboard = None
             if answer['status'] == 'ok':
                 for pl in answer.get('payload', []):
                     _type = pl['type']
@@ -108,11 +114,13 @@ class VkHandler(Handler):
                         if pl.get('title'):
                             f.name = pl['title']
                         _documents.append(f)
+                    elif _type == 'keyboard':
+                        keyboard = pl['keyboard']
             elif answer['status'] == 'error':
                 _text += f"ERROR: {answer.get('message')}"
-            if _photos or _documents:
-                self.send(_text, command.sender,
-                          documents=_documents, photos=_photos)
+            if _photos or _documents or keyboard:
+                self.send(_text, command.sender, documents=_documents,
+                          photos=_photos, keyboard=keyboard)
             else:
                 text.append(_text)
                 photos += _photos
@@ -188,3 +196,6 @@ class VkHandler(Handler):
         args = r.group('args')
 
         return {'ids': ids, 'excepts': excepts, 'action': action, 'args': args, 'room': room}
+
+    def get_sender(self, raw):
+        return raw['object']['peer_id']

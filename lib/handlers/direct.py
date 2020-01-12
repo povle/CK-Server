@@ -10,12 +10,14 @@ class DirectHandler(Handler):
         if raw.get('secret') != self.secret:
             raise AuthError
         parsed = raw['command']
-        return {'action': parsed['action'], 'sender': 0,
-                'ids': parsed['ids'], 'room': parsed['room'],
+        return {'action': parsed['action'], 'ids': parsed['ids'], 'room': parsed['room'],
                 'args': parsed['args'], 'excepts': parsed.get('excepts', [])}
 
     def handle(self, command: Command):
         return command.answers
+
+    def get_sender(self, raw):
+        return 0
 
     def handle_late(self, command: Command, cid: str):
         pass
