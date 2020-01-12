@@ -18,7 +18,7 @@ class BuiltinAction(Action):
         kwargs = {key: kwargs[key] for key in kwargs if kwargs[key]}
         response = self.func(**kwargs)
         if type(response) is str:
-            response = {'type': 'text', 'text': response}
+            response = [{'type': 'text', 'text': response}]
         if type(response) is not list:
             response = list(response)
         return self.make_answer(response)
@@ -52,7 +52,13 @@ error_action = ErrorAction('error')
 
 def help(text=''):
     message = ''
-    for f in actions + builtin_actions:
+    for f in actions:
+        doc = f.description
+        if doc and (text != '-a' and not f.admin_only)\
+                or (text == '-a' and f.admin_only):
+            message += f'•{f.name} - {doc}\n'
+    message += 'Команды серверу:\n'
+    for f in builtin_actions:
         doc = f.description
         if doc and (text != '-a' and not f.admin_only)\
                 or (text == '-a' and f.admin_only):
@@ -68,8 +74,8 @@ def vk_keyboard(text=''):
             {'type': 'text', 'text': 'Клавиатура подана'}]
 
 
-builtin_actions = {
+builtin_actions = [
     BuiltinAction(func=help, name='help', answer_types={Type.TEXT}, arg_types={Type.TEXT}),
     BuiltinAction(func=vk_keyboard, name='keyboard', answer_types={Type.VK_KEYBOARD},
                   arg_types={Type.TEXT}, description="включить клавиатуру")
-}
+]
