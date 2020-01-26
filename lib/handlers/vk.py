@@ -104,7 +104,6 @@ class VkHandler(Handler):
             keyboard = None
             if answer['status'] == 'ok':
                 for pl in answer.get('payload', []):
-                    print(pl) #FIXME
                     _type = pl['type']
                     if _type == 'text':
                         _text += pl['text']
