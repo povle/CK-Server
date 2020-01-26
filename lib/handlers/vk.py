@@ -104,6 +104,7 @@ class VkHandler(Handler):
             keyboard = None
             if answer['status'] == 'ok':
                 for pl in answer.get('payload', []):
+                    print(pl) #FIXME
                     _type = pl['type']
                     if _type == 'text':
                         _text += pl['text']
@@ -125,8 +126,9 @@ class VkHandler(Handler):
                 text.append(_text)
                 photos += _photos
                 documents += _documents
+        text = '\n'.join(text)
         if text or photos or documents:
-            self.send('\n'.join(text), command.sender,
+            self.send(text, command.sender,
                       documents=documents, photos=photos)
 
     def handle_late(self, command: Command, cid: str):
@@ -161,8 +163,9 @@ class VkHandler(Handler):
             text.append(_text)
             photos += _photos
             documents += _documents
+        text = '\n'.join(text)
         if text or photos or documents:
-            self.send('\n'.join(text), command.sender,
+            self.send(text, command.sender,
                       documents=documents, photos=photos)
 
     def parse_text(self, text):
