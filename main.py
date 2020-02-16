@@ -70,10 +70,12 @@ def handle_direct():
 
 class Dispatch(Namespace):
     def on_connect(self):
-        #TODO: authentification (token?)
         global connected
         sid = request.sid
         cid = request.args.get('id') #client's local id
+        token = request.args.get('token')
+        if not token or token != config.dispatch_token:
+            raise ConnectionRefusedError('bad token')
         if not cid or cid in connected or cid not in config.rooms['all']:
             raise ConnectionRefusedError('bad cid')
         logger.info(f'connected cid={cid} sid={sid}')
