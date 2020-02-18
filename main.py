@@ -4,6 +4,7 @@ from lib import Handler
 from lib.handlers import VkHandler, DirectHandler
 import logging
 import time
+import traceback
 import config
 logging.config.fileConfig('logger.conf')
 logger = logging.getLogger('ck-server.'+__name__)
@@ -20,7 +21,7 @@ direct_handler = DirectHandler(config.direct_token)
 
 @socketio.on_error_default
 def default_error_handler(e):
-    logger.error(e, str(request.event), stack_info=True)
+    logger.error(f"{e} {request.event} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
 
 def handle(handler: Handler, raw: dict):
     global commands
@@ -92,7 +93,12 @@ class Dispatch(Namespace):
     def on_disconnect(self):
         global connected
         sid = request.sid
-        cid = [x for x in connected if connected[x] == sid][0]
+        cid = [x for x in connected if connected[x] == sid]
+        if cid:
+            cid = cid[0]
+        else:
+            logger.warning(f'refused connection sid={sid}')
+            return
         logger.info(f'disconnected cid={cid} sid={sid}')
         connected = {key: val for key, val in connected.items() if val != sid}
 
