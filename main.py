@@ -5,10 +5,9 @@ from lib.handlers import VkHandler, DirectHandler
 import logging
 import time
 import config
-#logging.config.fileConfig('logger.conf')
-#logger = logging.getLogger('CK.'+__name__)
-logger = logging #FIXME
-logging.basicConfig(level=logging.INFO)
+logging.config.fileConfig('logger.conf')
+logger = logging.getLogger('ck-server.'+__name__)
+client_logger = logging.getLogger('client')
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -17,10 +16,15 @@ commands = set()
 connected = {}
 
 vk_handler = VkHandler(config.vk_token, config.vk_secret)
-direct_handler = DirectHandler('test') #FIXME: secure token
+direct_handler = DirectHandler(config.direct_token)
+
+@socketio.on_error_default
+def default_error_handler(e):
+    logger.error(e, str(request.event), stack_info=True)
 
 def handle(handler: Handler, raw: dict):
     global commands
+    logger.info(f'handled by {handler}: {raw}')
     command = handler.parse(raw)
     if command.room == 'default':
         command.room = config.default_room
@@ -101,6 +105,13 @@ class Dispatch(Namespace):
                 break
         else:
             raise ValueError('incorrect command')
+
+        if json.get('status') == 'error':
+            cl = client_logger.error
+        else:
+            cl = client_logger.debug
+        cl(json)
+
         command.add_answer(json['comp_id'], json)
 
 

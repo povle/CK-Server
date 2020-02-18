@@ -138,3 +138,5 @@ dmypy.json
 
 config.py
 test*
+*.conf
+log/
