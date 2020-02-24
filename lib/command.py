@@ -2,7 +2,7 @@ import time
 import secrets
 from .actions import Action
 class Command:
-    def __init__(self, handler, action: Action, sender, ids, room, excepts=[], args=[]):
+    def __init__(self, handler, action: Action, sender, ids, room, excepts=[], args=[], special=[]):
         self.handler = handler
         self.action = action
         self.sender = sender
@@ -20,6 +20,7 @@ class Command:
         self.complete = False
         self.handled = False
         self.timeout = self.action.timeout
+        self.special = []
 
     def add_answer(self, comp_id, answer):
         if not self.is_targeted_to(comp_id):
@@ -66,7 +67,8 @@ class Command:
                 'to': self.to,
                 'action': self.action.name,
                 'timeout': self.action.timeout,
-                'args': self.args}
+                'args': self.args,
+                'special': self.special}
 
     def is_targeted_to(self, cid):
         cid, room = self.get_id_room(cid)

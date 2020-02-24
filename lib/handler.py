@@ -44,6 +44,7 @@ class Handler(ABC):
             ids = parsed['ids']
             args = parsed['args']
             excepts = parsed.get('excepts', [])
+            special = parsed.get('special', [])
             for act in self.actions:
                 if act.name == action_name:
                     action = act
@@ -65,7 +66,8 @@ class Handler(ABC):
             ids = ['0']
             room = '0'
             excepts = []
-        command = Command(self, action=action, sender=self.get_sender(raw), ids=ids, room=room, args=args, excepts=excepts)
+        command = Command(self, action=action, sender=self.get_sender(raw), ids=ids,
+                          room=room, args=args, excepts=excepts, special=special)
         self.handle_builtins(command)
         return command
 
