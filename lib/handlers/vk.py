@@ -19,8 +19,7 @@ class VkHandler(Handler):
         self.aliases.update(vk_keyboard.keyboard.aliases)
         self.aliases.update(vk_keyboard.admin_keyboard.aliases)
 
-    def send(self, text, to, attachments=[], photos=[], documents=[], keyboard=None):
-        _attachments = []
+    def send(self, text, to, attachments=[], photos=[], documents=[], keyboard=None, _attachments=[]):
         attachments = attachments.copy()
         if photos or documents:
             upload = vk_api.VkUpload(self.vk)
@@ -96,12 +95,14 @@ class VkHandler(Handler):
         text = []
         photos = []
         documents = []
+        attachments = []
         room = command.room
         for rcid, answer in sorted(command.answers.items(), key=key):
             cid = rcid.split('.')[-1]
             _text = f"{cid if room != 'all' else rcid}: " if len(command.to) > 1 else ''
             _photos = []
             _documents = []
+            _attachments = []
             keyboard = None
             if answer['status'] == 'ok':
                 for pl in answer.get('payload', []):
@@ -117,30 +118,33 @@ class VkHandler(Handler):
                         _documents.append(f)
                     elif _type == 'keyboard':
                         keyboard = pl['keyboard']
+                    elif _type == 'vk_attachment':
+                        _attachments.append(pl['attachment'])
             elif answer['status'] == 'error':
                 _text += f"ERROR: {answer.get('message')}"
-            if _photos or _documents or keyboard:
+            if _photos or _documents or keyboard or _attachments:
                 self.send(_text, command.sender, documents=_documents,
-                          photos=_photos, keyboard=keyboard)
+                          photos=_photos, keyboard=keyboard,
+                          _attachments=_attachments)
             else:
                 text.append(_text)
                 photos += _photos
                 documents += _documents
+                attachments += _attachments
         text = '\n'.join(text)
-        if text or photos or documents:
+        if text or photos or documents or attachments:
             self.send(text, command.sender,
-                      documents=documents, photos=photos)
+                      documents=documents, photos=photos, _attachments=attachments)
 
     def handle_late(self, command: Command, cid: str):
-        text = []
-        photos = []
-        documents = []
         room = command.room
         rcid = cid
         cid = rcid.split('.')[-1]
         _text = f"{cid if room != 'all' else rcid} (late): " if len(command.to) > 1 else ''
         _photos = []
         _documents = []
+        _attachments = []
+        keyboard = None
         answer = command.answers[rcid]
         if answer['status'] == 'ok':
             for pl in answer.get('payload', []):
@@ -154,19 +158,15 @@ class VkHandler(Handler):
                     if pl.get('title'):
                         f.name = pl['title']
                     _documents.append(f)
+                elif _type == 'keyboard':
+                    keyboard = pl['keyboard']
+                elif _type == 'vk_attachment':
+                    _attachments.append(pl['attachment'])
         elif answer['status'] == 'error':
             _text += f"ERROR: {answer.get('message')}"
-        if _photos or _documents:
-            self.send(_text, command.sender,
-                      documents=_documents, photos=_photos)
-        else:
-            text.append(_text)
-            photos += _photos
-            documents += _documents
-        text = '\n'.join(text)
-        if text or photos or documents:
-            self.send(text, command.sender,
-                      documents=documents, photos=photos)
+        if any(_text, _photos, _documents, _attachments, keyboard):
+            self.send(_text, command.sender, documents=_documents,
+                      photos=_photos, keyboard=keyboard, _attachments=_attachments)
 
     def parse_text(self, text):
         r = re.fullmatch('(?:[рrкk](?P<room>(all|[0-9]+)) )?'

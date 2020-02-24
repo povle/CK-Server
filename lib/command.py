@@ -20,7 +20,7 @@ class Command:
         self.complete = False
         self.handled = False
         self.timeout = self.action.timeout
-        self.special = []
+        self.special = special
 
     def add_answer(self, comp_id, answer):
         if not self.is_targeted_to(comp_id):
