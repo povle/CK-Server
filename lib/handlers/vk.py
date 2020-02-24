@@ -86,7 +86,7 @@ class VkHandler(Handler):
                 'room': parsed['room'],
                 'args': args,
                 'excepts': parsed['excepts'],
-                'special': ['vk_photos']
+                'special': ['vk_upload']
                 }
 
     def handle(self, command: Command):
