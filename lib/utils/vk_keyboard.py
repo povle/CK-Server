@@ -34,6 +34,6 @@ admin_keyboard = CommandKeyboard(one_time=False)
 
 admin_keyboard.add_button('all test')
 admin_keyboard.add_line()
-admin_keyboard.add_button('all screenshot')
+admin_keyboard.add_button('all scr')
 admin_keyboard.add_line()
 admin_keyboard.add_button('all status')
