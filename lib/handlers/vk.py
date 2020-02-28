@@ -1,5 +1,6 @@
 from lib import Handler, Type, Command, AuthError
 from lib.utils import vk_keyboard
+from collections import defaultdict
 import vk_api
 import time
 import re
@@ -18,6 +19,7 @@ class VkHandler(Handler):
         self.aliases = {}
         self.aliases.update(vk_keyboard.keyboard.aliases)
         self.aliases.update(vk_keyboard.admin_keyboard.aliases)
+        self.last = defaultdict(lambda: None)
 
     def send(self, text, to, attachments=[], photos=[], documents=[], keyboard=None, _attachments=[]):
         attachments = attachments.copy()
@@ -58,6 +60,12 @@ class VkHandler(Handler):
             raise ValueError('no object')
 
         text = msg.get('text', '')
+        _id = self.get_sender(raw)
+        if text == '!!' and self.last[_id] is not None:
+            msg = self.last[_id]
+            text = msg.get('text', '')
+        else:
+            self.last[_id] = msg
         text = self.aliases.get(text, text)
         parsed = self.parse_text(text)
         args = []
