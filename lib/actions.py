@@ -21,6 +21,8 @@ actions = [
            description="нажать заданные клавиши"),
     Action('python', arg_types={Type.TEXT}, admin_only=True,
            description="выполнить заданный код на python"),
+    Action('update_config', arg_types={Type.TEXT}, admin_only=True,
+           description="изменить конфиг. аргумент: ключ значение(ПРОХОДИТ ЧЕРЕЗ eval)"),
     Action('off', description="выключить компьютер"),
     Action('restart', description="перезагрузить компьютер"),
     Action('sleep', description="перевести компьютер в режим сна"),
