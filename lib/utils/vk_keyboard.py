@@ -24,7 +24,7 @@ keyboard.add_button('Переместить', 'all move', color=VkKeyboardColor.
 keyboard.add_button('Вернуть', 'all move -r', color=VkKeyboardColor.POSITIVE)
 keyboard.add_line()
 keyboard.add_button('alt + f4', 'all altf', color=VkKeyboardColor.DEFAULT)
-keyboard.add_button('Без звука', 'all volume', color=VkKeyboardColor.DEFAULT)
+keyboard.add_button('Без звука', 'all mute', color=VkKeyboardColor.DEFAULT)
 keyboard.add_line()
 keyboard.add_button('Выкл. экран', 'all screen_off', color=VkKeyboardColor.DEFAULT)
 keyboard.add_button('Корзина', 'all bin', color=VkKeyboardColor.DEFAULT)
