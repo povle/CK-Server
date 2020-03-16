@@ -73,7 +73,7 @@ class Command:
     def is_targeted_to(self, cid):
         cid, room = self.get_id_room(cid)
         return self.room in (room, 'all')\
-            and (cid in self.ids or self.broadcast)\
+            and (cid in self.ids or (self.broadcast and cid != '0'))\
             and cid not in self.excepts
 
     def is_awaiting_dispatch(self, cid):
