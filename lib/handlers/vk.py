@@ -172,7 +172,7 @@ class VkHandler(Handler):
                     _attachments.append(pl['attachment'])
         elif answer['status'] == 'error':
             _text += f"ERROR: {answer.get('message')}"
-        if any(_text, _photos, _documents, _attachments, keyboard):
+        if any((_text, _photos, _documents, _attachments, keyboard)):
             self.send(_text, command.sender, documents=_documents,
                       photos=_photos, keyboard=keyboard, _attachments=_attachments)
 
