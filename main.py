@@ -80,9 +80,11 @@ class Dispatch(Namespace):
         cid = request.args.get('id') #client's local id
         token = request.args.get('token')
         if not token or token != config.dispatch_token:
-            raise ConnectionRefusedError('bad token')
+            return False #exception doesn't work due to a flask-socketio bug
+            #raise ConnectionRefusedError('bad token')
         if not cid or cid in connected or cid not in config.rooms['all']:
-            raise ConnectionRefusedError('bad cid')
+            return False
+            #raise ConnectionRefusedError('bad cid')
         logger.info(f'connected cid={cid} sid={sid}')
         connected[cid] = sid
         for c in commands:
