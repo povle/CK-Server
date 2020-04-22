@@ -1,7 +1,7 @@
 from flask import Flask, request
 from flask_socketio import SocketIO, Namespace, emit, ConnectionRefusedError
 from lib import Handler
-from lib.handlers import VkHandler, DirectHandler
+from lib.handlers import VkHandler, DirectHandler, AliceHandler
 import logging
 import time
 import traceback
@@ -16,6 +16,7 @@ socketio = SocketIO(app)
 commands = set()
 connected = {}
 
+alice_handler = AliceHandler()
 vk_handler = VkHandler(config.vk_token, config.vk_secret)
 direct_handler = DirectHandler(config.direct_token)
 
@@ -72,6 +73,16 @@ def handle_vk():
 def handle_direct():
     raw = request.get_json(force=True, silent=True)
     return handle(direct_handler, raw).answers
+
+@app.route('/input/alice', methods=['POST'])
+def handle_alice():
+    raw = request.get_json(force=True, silent=True)
+    if raw['session'].get('new'):
+        text = 'placeholder welcome' #FIXME
+    else:
+        text = 'Выполняю...'
+        socketio.start_background_task(handle, alice_handler, raw)
+    return {'response': {'text': text, 'end_session': False}, 'version': '1.0'}
 
 class Dispatch(Namespace):
     def on_connect(self):
