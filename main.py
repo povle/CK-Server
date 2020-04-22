@@ -2,6 +2,7 @@ from flask import Flask, request
 from flask_socketio import SocketIO, Namespace, emit, ConnectionRefusedError
 from lib import Handler
 from lib.handlers import VkHandler, DirectHandler, AliceHandler
+from lib.utils import yandex
 import logging
 import time
 import traceback
@@ -77,12 +78,28 @@ def handle_direct():
 @app.route('/input/alice', methods=['POST'])
 def handle_alice():
     raw = request.get_json(force=True, silent=True)
+    token = raw['session']['user'].get('access_token')
+    authorized = yandex.get_id(token) in config.alice_trusted_ids if token else False
+    resp = {'version': '1.0'}
+
     if raw['session'].get('new'):
         text = 'placeholder welcome' #FIXME
+        resp.update({'response': {'text': text, 'end_session': False}})
+        if not authorized:
+            resp['response'].update({'buttons': [{'title': 'Авторизоваться', 'hide': True}]})
+
+    elif raw['request']['command'] == 'Авторизоваться':
+        resp.update({"start_account_linking": {}})
+
     else:
-        text = 'Выполняю...'
-        socketio.start_background_task(handle, alice_handler, raw)
-    return {'response': {'text': text, 'end_session': False}, 'version': '1.0'}
+        token = raw['session']['user'].get('access_token')
+        if authorized:
+            resp.update({'response': {'text': 'Выполняю...', 'end_session': False}})
+            socketio.start_background_task(handle, alice_handler, raw)
+        else:
+            resp.update({"start_account_linking": {}})
+
+    return resp
 
 class Dispatch(Namespace):
     def on_connect(self):
