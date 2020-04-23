@@ -66,51 +66,47 @@ def handle_answers(command):
     commands.discard(command)
     return command
 
-def handle(handler: Handler, raw: dict):
-    command = make_command(handler, raw)
+def handle_command(command):
     disp = handle_dispatch(command)
     if disp:
         return disp
     socketio.sleep(command.timeout)
     return handle_answers(command)
 
+def handle(handler: Handler, raw: dict, in_background=True):
+    command = make_command(handler, raw)
+    if in_background:
+        if command.handled:
+            return command
+        socketio.start_background_task(handle_command, command)
+    else:
+        return handle_command(command)
+
 @app.route('/input/vk', methods=['POST'])
 def handle_vk():
     raw = request.get_json(force=True, silent=True)
     if raw.get('type') == 'confirmation':
         return config.vk_confirmation
-    socketio.start_background_task(handle, vk_handler, raw)
-    return 'ok'
+    try:
+        handle(vk_handler, raw)
+    finally:
+        return 'ok'
 
 @app.route('/input/direct', methods=['POST'])
 def handle_direct():
     raw = request.get_json(force=True, silent=True)
-    return handle(direct_handler, raw).answers
+    return handle(direct_handler, raw, in_background=False).answers
 
 @app.route('/input/alice', methods=['POST'])
 def handle_alice():
     raw = request.get_json(force=True, silent=True)
-    token = raw['session']['user'].get('access_token')
-    authorized = yandex.get_id(token) in config.alice_trusted_ids if token else False
-    resp = {'version': '1.0'}
-
-    if raw['session'].get('new'):
-        text = 'placeholder welcome' #FIXME
-        resp.update({'response': {'text': text, 'end_session': False}})
-        if not authorized:
-            resp['response'].update({'buttons': [{'title': 'Авторизоваться', 'hide': True}]})
-
-    elif raw['request']['command'] == 'Авторизоваться':
-        resp.update({"start_account_linking": {}})
-
-    else:
-        token = raw['session']['user'].get('access_token')
-        if authorized:
-            resp.update({'response': {'text': 'Выполняю...', 'end_session': False}})
-            socketio.start_background_task(handle, alice_handler, raw)
-        else:
-            resp.update({"start_account_linking": {}})
-
+    resp, proceed = yandex.form_alice_response(raw, config.alice_trusted_ids)
+    if proceed:
+        command = handle(alice_handler, raw)
+        if command:
+            ans = command.answers.get('0.0')
+            if ans and ans.get('status') == 'error':
+                resp['response']['text'] = 'Не удалось распознать команду'
     return resp
 
 class Dispatch(Namespace):

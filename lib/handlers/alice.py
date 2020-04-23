@@ -1,16 +1,18 @@
-from lib import Handler, Type, Command, AuthError
+from lib import Handler, Type, Command
 from difflib import SequenceMatcher
+
+readable = {'выключи': 'off',
+            'выключи экран': 'screen_off',
+            'звук': 'mute',
+            'сон': 'sleep',
+            'остановить': 'quit',
+            'корзина': 'bin'}
 
 class AliceHandler(Handler):
     def __init__(self,):
         super().__init__(answer_types={Type.TEXT},
                          arg_types={Type.TEXT})
-        self.readable = {'выключи': 'off',
-                         'выключи экран': 'screen_off',
-                         'звук': 'mute',
-                         'сон': 'sleep',
-                         'остановить': 'quit',
-                         'корзина': 'bin'}
+        self.readable = readable
 
     def initial_parse(self, raw):
         parsed = self.parse_request(raw['request'])
