@@ -30,6 +30,7 @@ actions = [
     Action('scr', arg_types={Type.TEXT}, answer_types={Type.PHOTO, Type.DOCUMENT},
            description="сделать скриншот, scr -d - скриншот документом"),
     Action('screen_off', description="отключить экран"),
+    Action('screen_on', description="включить экран"),
     Action('wallpaper', arg_types={Type.PHOTO},
            description="сменить обои (новые прислать документом)"),
     Action('upload', arg_types={Type.DOCUMENT, Type.TEXT},
