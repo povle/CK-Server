@@ -10,7 +10,7 @@ inverse_readable = {'off': ['выключи компьютер', 'выключи
                     'sleep': ['перейти в режим сна', 'сон', 'режим сна', 'спать'],
                     'quit': ['останови бота', 'бота останови'],
                     'bin': ['очисти корзину', 'корзину очисти'],
-                    'd': ['открой дисковод', 'дисковод',  'дисковод открой']}
+                    'd': ['открой дисковод', 'дисковод', 'дисковод открой']}
 readable = {}
 for k in inverse_readable:
     for v in inverse_readable[k]:
@@ -52,10 +52,10 @@ class AliceHandler(Handler):
                 ids.append(str(ent['value']))
 
         tokens = nlu['tokens']
-        broadcast = 'все' in tokens
+        broadcast = 'все' in tokens or 'всех' in tokens
         excepts_present = 'кроме' in tokens
 
-        action = ' '.join([x for x in tokens if x not in ids+['все', 'кроме', 'и']])
+        action = ' '.join([x for x in tokens if x not in ids+['все', 'всех', 'кроме', 'и', 'на']])
 
         if broadcast:
             if excepts_present:
