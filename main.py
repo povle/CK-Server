@@ -25,14 +25,17 @@ direct_handler = DirectHandler(config.direct_token)
 def default_error_handler(e):
     logger.error(f"{e} {request.event} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
 
-def handle(handler: Handler, raw: dict):
-    global commands
+def make_command(handler: Handler, raw: dict):
     logger.info(f'handled by {handler}: {raw}')
     command = handler.parse(raw)
     if command.room == 'default':
         command.room = config.default_room
     if not command.ready_for_dispatch:
         command.to = config.rooms[command.room]
+    return command
+
+def handle_dispatch(command):
+    global commands
     if command.handled:
         return command
     commands.add(command)
@@ -48,7 +51,9 @@ def handle(handler: Handler, raw: dict):
                                      'message': 'Not connected',
                                      'exception': None,
                                      'traceback': None})
-    socketio.sleep(command.timeout)
+
+def handle_answers(command):
+    global commands
     for cid in command.answers:
         if command.answers[cid] is None:
             command.add_answer(cid, {'comp_id': cid,
@@ -61,6 +66,13 @@ def handle(handler: Handler, raw: dict):
     commands.discard(command)
     return command
 
+def handle(handler: Handler, raw: dict):
+    command = make_command(handler, raw)
+    disp = handle_dispatch(command)
+    if disp:
+        return disp
+    socketio.sleep(command.timeout)
+    return handle_answers(command)
 
 @app.route('/input/vk', methods=['POST'])
 def handle_vk():
