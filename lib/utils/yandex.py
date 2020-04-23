@@ -25,7 +25,7 @@ def form_alice_response(raw, trusted_ids):
     elif raw['request']['command'].lower() == 'авторизоваться':
         resp.update({"start_account_linking": {}})
 
-    elif raw['request']['command'].lower() == 'помощь':
+    elif raw['request']['command'].lower() in ('помощь', 'что ты умеешь', 'что ты умеешь?'):
         text = 'Доступные команды:\n' + '\n'.join([x[0] for x in alice.inverse_readable.values()])
         resp.update({'response': {'text': text, 'end_session': False}})
 
