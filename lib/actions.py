@@ -38,6 +38,7 @@ actions = [
            description='переместить всё содержимое папки "Задания" в папку "Старое"'),
     Action('altf', description="alt + f4"),
     Action('mute', description="выключить звук"),
+    Action('unmute', description="включить звук"),
     Action('bin', description="очистить корзину"),
     Action('d'),
     Action('status', answer_types={Type.TEXT}, description="статус"),
