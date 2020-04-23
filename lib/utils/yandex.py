@@ -11,7 +11,7 @@ def get_id(token: str):
 def form_alice_response(raw, trusted_ids):
     proceed_with_command = False
 
-    token = raw['session']['user'].get('access_token')
+    token = raw['session'].get('user', {}).get('access_token')
     authorized = get_id(token) in trusted_ids if token else False
     resp = {'version': '1.0'}
 
