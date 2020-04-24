@@ -33,7 +33,6 @@ def form_alice_response(raw, trusted_ids):
         resp.update({'response': {'text': 'Получено', 'end_session': False}})
 
     else:
-        token = raw['session']['user'].get('access_token')
         if authorized:
             resp.update({'response': {'text': 'Выполняю...', 'end_session': False}})
             proceed_with_command = True
