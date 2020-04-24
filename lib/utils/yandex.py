@@ -27,6 +27,8 @@ def form_alice_response(raw, trusted_ids):
 
     elif raw['request']['command'].lower() in ('помощь', 'что ты умеешь', 'что ты умеешь?'):
         text = 'Доступные команды:\n' + '\n'.join([x[0] for x in alice.inverse_readable.values()])
+        if not authorized:
+            text = 'Для выполнения команд необходима авторизация. Скажите "авторизоваться".\n' + text
         resp.update({'response': {'text': text, 'end_session': False}})
 
     elif raw['request']['command'] == '':
