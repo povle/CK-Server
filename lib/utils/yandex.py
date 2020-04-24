@@ -16,7 +16,9 @@ def form_alice_response(raw, trusted_ids):
     resp = {'version': '1.0'}
 
     if raw['session'].get('new'):
-        text = 'Control Kitty - это приватный навык для удалённого управления компьютерами с помощью голоса'
+        text = 'Control Kitty - это приватный навык для удалённого управления компьютерами с помощью голоса.'
+        if not authorized:
+            text += '\nДля работы с навыком необходима авторизация. Скажите "авторизоваться".'
         resp.update({'response': {'text': text, 'end_session': False}})
         if not authorized:
             resp['response'].update(
