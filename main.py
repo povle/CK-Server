@@ -106,7 +106,11 @@ def handle_direct():
 @app.route('/input/alice', methods=['POST'])
 def handle_alice():
     raw = request.get_json(force=True, silent=True)
-    alice_logger.info(raw)
+    if raw.get('request', {}).get('command') == 'ping':
+        log_function = alice_logger.debug
+    else:
+        log_function = alice_logger.info
+    log_function(raw)
     resp, proceed = yandex.form_alice_response(raw, config.alice_trusted_ids)
     if proceed:
         command = handle(alice_handler, raw)
