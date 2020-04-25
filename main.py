@@ -10,6 +10,7 @@ import config
 logging.config.fileConfig('logger.conf')
 logger = logging.getLogger('ck-server.'+__name__)
 client_logger = logging.getLogger('client')
+alice_logger = logging.getLogger('alice')
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -20,6 +21,11 @@ connected = {}
 alice_handler = AliceHandler()
 vk_handler = VkHandler(config.vk_token, config.vk_secret)
 direct_handler = DirectHandler(config.direct_token)
+
+@app.errorhandler(Exception)
+def handle_bad_request(e):
+    logger.error(f"{e} {request.event} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
+    return 'Internal error', 500
 
 @socketio.on_error_default
 def default_error_handler(e):
@@ -100,6 +106,7 @@ def handle_direct():
 @app.route('/input/alice', methods=['POST'])
 def handle_alice():
     raw = request.get_json(force=True, silent=True)
+    alice_logger.info(raw)
     resp, proceed = yandex.form_alice_response(raw, config.alice_trusted_ids)
     if proceed:
         command = handle(alice_handler, raw)
