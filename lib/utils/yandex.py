@@ -15,7 +15,7 @@ def form_alice_response(raw, trusted_ids):
     authorized = get_id(token) in trusted_ids if token else False
     resp = {'version': '1.0'}
     try:
-        if raw['session'].get('new'):
+        if raw['session'].get('new') and not raw.get('request').get('command'):
             text = 'Control Kitty - это приватный навык для удалённого управления компьютерами с помощью голоса.'
             if not authorized:
                 text += '\nДля работы с навыком необходима авторизация. Скажите "авторизоваться".'
