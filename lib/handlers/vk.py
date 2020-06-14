@@ -96,7 +96,7 @@ class VkHandler(Handler):
                 'special': ['vk_upload']
                 }
 
-    def handle(self, command: Command):
+    def handle(self, command: Command, late_cid=None):
         def key(x):
             s = x[0].split('.')
             return tuple(s[:-1]+[int(s[-1])])
@@ -106,8 +106,10 @@ class VkHandler(Handler):
         attachments = []
         room = command.room
         for rcid, answer in sorted(command.answers.items(), key=key):
+            if late_cid and rcid != late_cid:
+                continue
             cid = rcid.split('.')[-1]
-            _text = f"{cid if room != 'all' else rcid}: " if len(command.to) > 1 else ''
+            _text = f"{cid if room != 'all' else rcid}{' (late)' if late_cid else ''}: " if len(command.to) > 1 else ''
             _photos = []
             _documents = []
             _attachments = []
@@ -145,36 +147,7 @@ class VkHandler(Handler):
                       documents=documents, photos=photos, _attachments=attachments)
 
     def handle_late(self, command: Command, cid: str):
-        room = command.room
-        rcid = cid
-        cid = rcid.split('.')[-1]
-        _text = f"{cid if room != 'all' else rcid} (late): " if len(command.to) > 1 else ''
-        _photos = []
-        _documents = []
-        _attachments = []
-        keyboard = None
-        answer = command.answers[rcid]
-        if answer['status'] == 'ok':
-            for pl in answer.get('payload', []):
-                _type = pl['type']
-                if _type == 'text':
-                    _text += pl['text']
-                elif _type == 'photo':
-                    _photos.append(io.BytesIO(base64.b64decode(pl['data'])))
-                elif _type == 'document':
-                    f = io.BytesIO(base64.b64decode(pl['data']))
-                    if pl.get('title'):
-                        f.name = pl['title']
-                    _documents.append(f)
-                elif _type == 'keyboard':
-                    keyboard = pl['keyboard']
-                elif _type == 'vk_attachment':
-                    _attachments.append(pl['attachment'])
-        elif answer['status'] == 'error':
-            _text += f"ERROR: {answer.get('message')}"
-        if any((_text, _photos, _documents, _attachments, keyboard)):
-            self.send(_text, command.sender, documents=_documents,
-                      photos=_photos, keyboard=keyboard, _attachments=_attachments)
+        return self.handle(command, late_cid=cid)
 
     def parse_text(self, text):
         r = re.fullmatch('(?:[рrкk](?P<room>(all|[0-9]+)) )?'
