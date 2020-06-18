@@ -24,7 +24,7 @@ direct_handler = DirectHandler(config.direct_token)
 
 @app.errorhandler(Exception)
 def handle_bad_request(e):
-    logger.error(f"{e} {request.event} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
+    logger.error(f"{e} {request.path} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
     return 'Internal error', 500
 
 @socketio.on_error_default
