@@ -1,4 +1,5 @@
-from .. import Handler, Type, Command, AuthError
+from lib import Handler, Type, Command, AuthError
+from lib.utils import checkpw
 
 class DirectHandler(Handler):
     def __init__(self, secret):
@@ -7,7 +8,7 @@ class DirectHandler(Handler):
         self.secret = secret
 
     def initial_parse(self, raw: dict):
-        if raw.get('secret') != self.secret:
+        if not checkpw(raw.get('secret', '').encode('utf8'), self.secret):
             raise AuthError
         parsed = raw['command']
         return {'action': parsed['action'], 'ids': parsed['ids'], 'room': parsed['room'],

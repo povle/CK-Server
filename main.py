@@ -2,7 +2,7 @@ from flask import Flask, request
 from flask_socketio import SocketIO, Namespace, emit, ConnectionRefusedError
 from lib import Handler
 from lib.handlers import VkHandler, DirectHandler, AliceHandler
-from lib.utils import yandex
+from lib.utils import yandex, checkpw
 import logging
 import time
 import traceback
@@ -121,7 +121,7 @@ class Dispatch(Namespace):
         sid = request.sid
         cid = request.args.get('id') #client's local id
         token = request.args.get('token')
-        if not token or token != config.dispatch_token:
+        if not token or not checkpw(token.encode('utf8'), config.dispatch_token):
             return False #exception doesn't work due to a flask-socketio bug
             #raise ConnectionRefusedError('bad token')
         if not cid or cid in connected or cid not in config.rooms['all']:

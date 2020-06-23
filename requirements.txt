@@ -2,3 +2,4 @@ Flask
 flask-socketio
 gunicorn
 gevent
+bcrypt

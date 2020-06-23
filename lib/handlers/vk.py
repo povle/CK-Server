@@ -1,5 +1,5 @@
 from lib import Handler, Type, Command, AuthError
-from lib.utils import vk_keyboard
+from lib.utils import vk_keyboard, checkpw
 from collections import defaultdict
 import vk_api
 import time
@@ -52,7 +52,7 @@ class VkHandler(Handler):
     def initial_parse(self, raw):
         if raw.get('type') != 'message_new':
             raise ValueError('wrong event type')
-        if raw.get('secret') != self.secret:
+        if not checkpw(raw.get('secret', '').encode('utf8'), self.secret):
             raise AuthError('wrong secret')
 
         msg = raw.get('object')
