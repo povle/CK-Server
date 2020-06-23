@@ -2,7 +2,7 @@ from flask import Flask, request
 from flask_socketio import SocketIO, Namespace, emit, ConnectionRefusedError
 from lib import Handler
 from lib.handlers import VkHandler, DirectHandler, AliceHandler
-from lib.utils import yandex, checkpw
+from lib.utils import yandex, checkpw, safe_raw
 import logging
 import time
 import traceback
@@ -32,7 +32,7 @@ def default_error_handler(e):
     logger.error(f"{e} {request.event} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
 
 def make_command(handler: Handler, raw: dict):
-    logger.info(f'handled by {handler}: {raw}')
+    logger.info(f'handled by {handler}: {safe_raw(raw)}')
     command = handler.parse(raw)
     if command.room == 'default':
         command.room = config.default_room
@@ -105,7 +105,7 @@ def handle_alice():
         log_function = alice_logger.debug
     else:
         log_function = alice_logger.info
-    log_function(raw)
+    log_function(safe_raw(raw))
     resp, proceed = yandex.form_alice_response(raw, config.alice_trusted_ids)
     if proceed:
         command = handle(alice_handler, raw)
