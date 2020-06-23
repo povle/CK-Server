@@ -1,8 +1,10 @@
 import time
 import secrets
 from .actions import Action
+
 class Command:
-    def __init__(self, handler, action: Action, sender, ids, room, excepts=[], args=[], special=[]):
+    def __init__(self, handler, action: Action, sender, ids, room,
+                 excepts=[], args=[], special=[], complete_event=None):
         self.handler = handler
         self.action = action
         self.sender = sender
@@ -21,6 +23,7 @@ class Command:
         self.handled = False
         self.timeout = self.action.timeout
         self.special = special
+        self.complete_event = complete_event
 
     def add_answer(self, comp_id, answer):
         if not self.is_targeted_to(comp_id):
@@ -33,6 +36,8 @@ class Command:
         self.answers[comp_id] = answer
         if all([x is not None for x in self.answers.values()]):
             self.complete = True
+            if self.complete_event is not None:
+                self.complete_event.set()
             if not self.handled:
                 self.be_handled()
             else:
@@ -78,6 +83,26 @@ class Command:
 
     def is_awaiting_dispatch(self, cid):
         return self.is_targeted_to(cid) and cid not in self.sent_to
+
+    def await_complete(self, timeout=None):
+        w = None
+        if timeout is None:
+            timeout = self.timeout
+        if self.complete_event is not None:
+            w = self.complete_event.wait(timeout=timeout)
+        self.handle_timeout()
+        return w
+
+    def handle_timeout(self):
+        for cid in self.answers:
+            if self.answers[cid] is None:
+                self.add_answer(cid, {'comp_id': cid,
+                                      'command_id': self.id,
+                                      'timestamp': time.time(),
+                                      'status': 'error',
+                                      'message': 'Timeout',
+                                      'exception': None,
+                                      'traceback': None})
 
     @staticmethod
     def get_id_room(rcid):

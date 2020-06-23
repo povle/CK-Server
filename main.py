@@ -38,6 +38,7 @@ def make_command(handler: Handler, raw: dict):
         command.room = config.default_room
     if not command.ready_for_dispatch:
         command.to = config.rooms[command.room]
+    command.complete_event = socketio.server.eio.create_event()
     return command
 
 def handle_dispatch(command):
@@ -58,26 +59,20 @@ def handle_dispatch(command):
                                      'exception': None,
                                      'traceback': None})
 
-def handle_answers(command):
+def wait_and_cleanup(command, seconds):
     global commands
-    for cid in command.answers:
-        if command.answers[cid] is None:
-            command.add_answer(cid, {'comp_id': cid,
-                                     'command_id': command.id,
-                                     'timestamp': time.time(),
-                                     'status': 'error',
-                                     'message': 'Timeout',
-                                     'exception': None,
-                                     'traceback': None})
+    socketio.sleep(seconds)
     commands.discard(command)
-    return command
 
 def handle_command(command):
     disp = handle_dispatch(command)
     if disp:
         return disp
-    socketio.sleep(command.timeout)
-    return handle_answers(command)
+    t0 = time.monotonic()
+    command.await_complete()
+    dt = time.monotonic() - t0
+    socketio.start_background_task(wait_and_cleanup, command, max(command.timeout - dt, 0))
+    return command
 
 def handle(handler: Handler, raw: dict, in_background=True):
     command = make_command(handler, raw)
