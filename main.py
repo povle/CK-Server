@@ -123,7 +123,7 @@ class Dispatch(Namespace):
         global connected
         sid = request.sid
         cid = request.args.get('id') #client's local id
-        token = request.args.get('token')
+        token = request.headers.get('CK-Token')
         if not token or not checkpw(token.encode('utf8'), config.dispatch_token):
             logger.warning(f'refused connect attempt: bad token; {get_ip()}')
             return False #exception doesn't work due to a flask-socketio bug
