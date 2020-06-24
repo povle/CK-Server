@@ -7,6 +7,9 @@ import logging
 import time
 import traceback
 import config
+import copy
+import base64
+
 logging.config.fileConfig('logger.conf')
 logger = logging.getLogger('ck-server.'+__name__)
 client_logger = logging.getLogger('client')
@@ -99,7 +102,12 @@ def handle_vk():
 @app.route('/input/direct', methods=['POST'])
 def handle_direct():
     raw = request.get_json(force=True, silent=True)
-    return handle(direct_handler, raw, in_background=False).answers
+    answers = copy.deepcopy(handle(direct_handler, raw, in_background=False).answers)
+    for ans in answers.values():
+        for pl in ans.get('payload', []):
+                if 'data' in pl:
+                    pl['data'] = base64.b64encode(pl['data']).decode('utf8')
+    return answers
 
 @app.route('/input/alice', methods=['POST'])
 def handle_alice():
