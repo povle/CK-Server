@@ -22,17 +22,20 @@ alice_handler = AliceHandler()
 vk_handler = VkHandler(config.vk_token, config.vk_secret)
 direct_handler = DirectHandler(config.direct_token)
 
+def get_ip():
+    return request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+
 @app.errorhandler(Exception)
 def handle_bad_request(e):
-    logger.error(f"{e} {request.path} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
+    logger.error(f"{e} {request.path} {get_ip()} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
     return 'Internal error', 500
 
 @socketio.on_error_default
 def default_error_handler(e):
-    logger.error(f"{e} {request.event} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
+    logger.error(f"{e} {request.event} {get_ip()} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
 
 def make_command(handler: Handler, raw: dict):
-    logger.info(f'handled by {handler}: {safe_raw(raw)}')
+    logger.info(f'handled by {handler}: {get_ip()} {safe_raw(raw)}')
     command = handler.parse(raw)
     if command.room == 'default':
         command.room = config.default_room
@@ -122,12 +125,14 @@ class Dispatch(Namespace):
         cid = request.args.get('id') #client's local id
         token = request.args.get('token')
         if not token or not checkpw(token.encode('utf8'), config.dispatch_token):
+            logger.warning(f'refused connect attempt: bad token; {get_ip()}')
             return False #exception doesn't work due to a flask-socketio bug
             #raise ConnectionRefusedError('bad token')
         if not cid or cid in connected or cid not in config.rooms['all']:
+            logger.warning(f'refused connect attempt: bad cid {cid}; {get_ip()}')
             return False
             #raise ConnectionRefusedError('bad cid')
-        logger.info(f'connected cid={cid} sid={sid}')
+        logger.info(f'connected cid={cid} sid={sid} ip={get_ip()}')
         connected[cid] = sid
         for c in commands:
             if c.is_awaiting_dispatch(cid):
@@ -141,9 +146,9 @@ class Dispatch(Namespace):
         if cid:
             cid = cid[0]
         else:
-            logger.warning(f'refused connection sid={sid}')
+            logger.warning(f'refused connection sid={sid} ip={get_ip()}')
             return
-        logger.info(f'disconnected cid={cid} sid={sid}')
+        logger.info(f'disconnected cid={cid} sid={sid} ip={get_ip()}')
         connected = {key: val for key, val in connected.items() if val != sid}
 
     def on_answer(self, json):
