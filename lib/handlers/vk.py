@@ -108,7 +108,13 @@ class VkHandler(Handler):
             if late_cid and rcid != late_cid:
                 continue
             cid = rcid.split('.')[-1]
-            _text = f"{cid if room != 'all' else rcid}{' (late)' if late_cid else ''}: " if len(command.to) > 1 else ''
+
+            _text = f"{cid if room != 'all' else rcid}" if len(command.to) > 1 else ''
+            if late_cid:
+                _text += ' (late)'
+            if _text:
+                _text += ': '
+
             _photos = []
             _documents = []
             _attachments = []
