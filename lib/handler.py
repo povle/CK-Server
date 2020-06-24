@@ -2,8 +2,11 @@ from .command import Command
 from .types import Type
 from abc import ABC, abstractmethod
 from .actions import actions
-import time
 from . import builtinc
+import time
+import logging
+import traceback
+logger = logging.getLogger('ck-server.'+__name__)
 
 class Handler(ABC):
     def __init__(self, arg_types=set(), answer_types=set()):
@@ -60,6 +63,12 @@ class Handler(ABC):
                 else:
                     raise ValueError('Unknown action')
         except Exception as e:
+            log_function = logger.error
+            if getattr(e, 'message', str(e)) == 'Unknown action':
+                log_function = logger.debug
+            #not using logger.exception because i want the traceback to be in a single line
+            log_function(f"{self} {type(e).__name__} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
+
             action = self.error_action
             args = [{'type': 'exception',
                      'exception': e}]
