@@ -5,7 +5,6 @@ import vk_api
 import time
 import re
 import requests
-import base64
 import io
 
 class VkHandler(Handler):
@@ -82,7 +81,7 @@ class VkHandler(Handler):
                 _type = 'document'
                 url = att['doc']['url']
                 title = att['doc']['title']
-            data = base64.b64encode(requests.get(url).content)
+            data = requests.get(url).content
             _dict = {'type': _type, 'data': data}
             if title:
                 _dict.update({'title': title})
@@ -120,9 +119,9 @@ class VkHandler(Handler):
                     if _type == 'text':
                         _text += pl['text']
                     elif _type == 'photo':
-                        _photos.append(io.BytesIO(base64.b64decode(pl['data'])))
+                        _photos.append(io.BytesIO(pl['data']))
                     elif _type == 'document':
-                        f = io.BytesIO(base64.b64decode(pl['data']))
+                        f = io.BytesIO(pl['data'])
                         if pl.get('title'):
                             f.name = pl['title']
                         _documents.append(f)
