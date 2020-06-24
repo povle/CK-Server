@@ -1,5 +1,5 @@
 import time
-import secrets
+import uuid
 from .actions import Action
 
 class Command:
@@ -16,7 +16,7 @@ class Command:
         if not self.broadcast and self.room not in ['all', 'default']:
             self.to = [f'{self.room}.{cid}' for cid in ids] #cids w/ rooms
         self.timestamp = time.time()
-        self.id = secrets.token_hex(4)
+        self.id = uuid.uuid4().hex
         self.args = args
         self.sent_to = set() #w/ rooms
         self.complete = False
