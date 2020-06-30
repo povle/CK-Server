@@ -72,20 +72,24 @@ class VkHandler(Handler):
             args.append({'type': 'text', 'text': parsed['args']})
 
         for att in msg.get('attachments'):
+            _dict = None
             if att['type'] == 'photo':
-                _type = 'photo'
                 photo = att['photo']
-                url = max(photo['sizes'], key=lambda x: x['width']*x['height'])['url']
-                title = None
+                _dict = {'type': 'vk_attachment',
+                         'content': 'photo',
+                         'attachment': f"photo{photo['owner_id']}_{photo['id']}",
+                         'raw': photo}
             elif att['type'] == 'doc':
-                _type = 'document'
-                url = att['doc']['url']
-                title = att['doc']['title']
-            data = requests.get(url).content
-            _dict = {'type': _type, 'data': data}
-            if title:
-                _dict.update({'title': title})
-            args.append(_dict)
+                d = att['doc']
+                s = f"doc{d['owner_id']}_{d['id']}"
+                if 'access_key' in d:
+                    s += '_' + d['access_key']
+                _dict = {'type': 'vk_attachment',
+                         'content': 'document',
+                         'attachment': s,
+                         'raw': d}
+            if _dict:
+                args.append(_dict)
 
         return {'action': parsed['action'],
                 'ids': parsed['ids'],
