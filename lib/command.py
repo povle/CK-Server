@@ -4,7 +4,7 @@ from .actions import Action
 
 class Command:
     def __init__(self, handler, action: Action, sender, ids, room,
-                 excepts=[], args=[], special=[], complete_event=None):
+                 excepts=[], args=[], special={}, complete_event=None):
         self.handler = handler
         self.action = action
         self.sender = sender
