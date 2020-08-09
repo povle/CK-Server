@@ -6,6 +6,7 @@ import time
 import re
 import requests
 import io
+import json
 
 class VkHandler(Handler):
     def __init__(self, token, secret):
@@ -20,7 +21,7 @@ class VkHandler(Handler):
         self.aliases.update(vk_keyboard.admin_keyboard.aliases)
         self.last = defaultdict(lambda: None)
 
-    def send(self, text, to, attachments=[], photos=[], documents=[], keyboard=None, _attachments=[]):
+    def send(self, text, to, attachments=[], photos=[], documents=[], _attachments=[], keyboard=None, template=None):
         attachments = attachments.copy()
         if photos or documents:
             upload = vk_api.VkUpload(self.vk)
@@ -41,9 +42,13 @@ class VkHandler(Handler):
             text = 'empty'
         text = str(text)
 
+        if isinstance(template, dict):
+            template = json.dumps(template)
+
         rd_id = vk_api.utils.get_random_id()
         self.vk.messages.send(peer_id=to, random_id=rd_id, message=text[:4000],
-                              attachment=','.join(_attachments), keyboard=keyboard)
+                              attachment=','.join(_attachments), keyboard=keyboard,
+                              template=template)
         if len(text) > 4000:
             time.sleep(0.4)
             self.send(text[4000:], to)
@@ -99,7 +104,7 @@ class VkHandler(Handler):
                 'special': {'vk_upload': {}}
                 }
 
-    def handle(self, command: Command, late_cid=None):
+    def handle(self, command: Command, late_cid=None, carousel=False):
         def key(x):
             s = x[0].split('.')
             return tuple(s[:-1]+[int(s[-1])])
@@ -107,21 +112,24 @@ class VkHandler(Handler):
         photos = []
         documents = []
         attachments = []
+        carousel_elements = []
         room = command.room
         for rcid, answer in sorted(command.answers.items(), key=key):
             if late_cid and rcid != late_cid:
                 continue
             cid = rcid.split('.')[-1]
 
-            _text = f"{cid if room != 'all' else rcid}" if len(command.to) > 1 else ''
+            _prefix = f"{cid if room != 'all' else rcid}" if len(command.to) > 1 else ''
             if late_cid:
-                _text += ' (late)'
-            if _text:
-                _text += ': '
+                _prefix += ' (late)'
+            if _prefix:
+                _prefix += ': '
+            _text = ''
 
             _photos = []
             _documents = []
             _attachments = []
+            _photo_attachments = []
             keyboard = None
             if answer['status'] == 'ok':
                 for pl in answer.get('payload', []):
@@ -139,20 +147,35 @@ class VkHandler(Handler):
                         keyboard = pl['keyboard']
                     elif _type == 'vk_attachment':
                         _attachments.append(pl['attachment'])
+                        if pl.get('content') == 'photo':
+                            _photo_attachments.append(pl['attachment'].replace('photo', ''))
             elif answer['status'] == 'error':
                 _text += f"ERROR: {answer.get('message')}"
-            if _photos or _documents or keyboard or _attachments:
-                self.send(_text, command.sender, documents=_documents,
+
+            if carousel and _photo_attachments and len(command.answers) > 1 and not late_cid:
+                for att in _photo_attachments:
+                    _element = {
+                        'photo_id': att,
+                        'action': {'type': 'open_photo'},
+                        'buttons': [{'action': {'type': 'text', 'label': '.'}}],
+                        'title': cid if room != 'all' else rcid,
+                        'description': _text or '.'
+                    }
+                    carousel_elements.append(_element)
+            elif _photos or _documents or keyboard or _attachments:
+                self.send(_prefix + _text, command.sender, documents=_documents,
                           photos=_photos, keyboard=keyboard,
                           _attachments=_attachments)
             else:
-                text.append(_text)
+                text.append(_prefix + _text)
                 photos += _photos
                 documents += _documents
                 attachments += _attachments
-        text = '\n'.join(text)
+
+        if carousel and carousel_elements:
+            self.send('Images:', command.sender, template={'type': 'carousel', 'elements': carousel_elements})
         if text or photos or documents or attachments:
-            self.send(text, command.sender,
+            self.send('\n'.join(text), command.sender,
                       documents=documents, photos=photos, _attachments=attachments)
 
     def handle_late(self, command: Command, cid: str):
