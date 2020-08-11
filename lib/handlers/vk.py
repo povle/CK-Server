@@ -59,9 +59,10 @@ class VkHandler(Handler):
         if not checkpw(raw.get('secret', '').encode('utf8'), self.secret):
             raise AuthError('wrong secret')
 
-        msg = raw.get('object')
+        msg = raw.get('object', {}).get('message')
         if not msg:
             raise ValueError('no object')
+        carousel = raw.get('object', {}).get('client_info', {}).get('carousel', False)
 
         text = msg.get('text', '')
         _id = self.get_sender(raw)
@@ -96,18 +97,26 @@ class VkHandler(Handler):
             if _dict:
                 args.append(_dict)
 
+        special = {'vk_upload': {}}
+        if carousel and (len(parsed['ids']) > 1 or 'all' in parsed['ids']):
+            special['photo_processing'] = {'aspect_ratio': [13, 8], 'max_dim': 1536}
+
         return {'action': parsed['action'],
                 'ids': parsed['ids'],
                 'room': parsed['room'],
                 'args': args,
                 'excepts': parsed['excepts'],
-                'special': {'vk_upload': {}}
+                'special': special
                 }
 
-    def handle(self, command: Command, late_cid=None, carousel=False):
+    def handle(self, command: Command, late_cid=None, carousel=True):
         def key(x):
             s = x[0].split('.')
             return tuple(s[:-1]+[int(s[-1])])
+
+        if 'photo_processing' not in command.special:
+            carousel = False
+
         text = []
         photos = []
         documents = []
@@ -154,10 +163,13 @@ class VkHandler(Handler):
 
             if carousel and _photo_attachments and len(command.answers) > 1 and not late_cid:
                 for att in _photo_attachments:
+                    label = '' if room == '410' else f'k{room} '
+                    label += f'{cid} '
+                    label += command.action.name
                     _element = {
                         'photo_id': att,
                         'action': {'type': 'open_photo'},
-                        'buttons': [{'action': {'type': 'text', 'label': '.'}}],
+                        'buttons': [{'action': {'type': 'text', 'label': label}}],
                         'title': cid if room != 'all' else rcid,
                         'description': _text or '.'
                     }
@@ -214,4 +226,4 @@ class VkHandler(Handler):
         return {'ids': ids, 'excepts': excepts, 'action': action, 'args': args, 'room': room}
 
     def get_sender(self, raw):
-        return raw['object']['peer_id']
+        return raw['object']['message']['peer_id']
