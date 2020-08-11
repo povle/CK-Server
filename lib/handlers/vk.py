@@ -127,6 +127,7 @@ class VkHandler(Handler):
             if late_cid and rcid != late_cid:
                 continue
             cid = rcid.split('.')[-1]
+            answer_room = rcid.split('.')[-2]
 
             _prefix = f"{cid if room != 'all' else rcid}" if len(command.to) > 1 else ''
             if late_cid:
@@ -163,14 +164,22 @@ class VkHandler(Handler):
 
             if carousel and _photo_attachments and len(command.answers) > 1 and not late_cid:
                 for att in _photo_attachments:
-                    label = '' if room == '410' else f'k{room} '
-                    label += f'{cid} '
-                    label += command.action.name
+                    command_prefix = '' if answer_room == '410' else f'k{answer_room} '
+                    command_prefix += f'{cid} '
                     _element = {
                         'photo_id': att,
                         'action': {'type': 'open_photo'},
-                        'buttons': [{'action': {'type': 'text', 'label': label}}],
-                        'title': cid if room != 'all' else rcid,
+                        'buttons': [{'action':
+                                        {'type': 'text',
+                                        'label': command_prefix + command.action.name,},
+                                     'color': 'positive'
+                                     },
+                                    {'action':
+                                        {'type': 'text',
+                                        'label': command_prefix + 'altf'}
+                                    },
+                                                ],
+                        'title': 'Скриншот ' + (cid if room != 'all' else rcid),
                         'description': _text or '.'
                     }
                     carousel_elements.append(_element)
@@ -185,7 +194,7 @@ class VkHandler(Handler):
                 attachments += _attachments
 
         if carousel and carousel_elements:
-            self.send('Images:', command.sender, template={'type': 'carousel', 'elements': carousel_elements})
+            self.send('Изображения:', command.sender, template={'type': 'carousel', 'elements': carousel_elements})
         if text or photos or documents or attachments:
             self.send('\n'.join(text), command.sender,
                       documents=documents, photos=photos, _attachments=attachments)
