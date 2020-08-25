@@ -195,9 +195,13 @@ class VkHandler(Handler):
 
         if carousel and carousel_elements:
             self.send('Изображения:', command.sender, template={'type': 'carousel', 'elements': carousel_elements})
+
+        text = '\n'.join(text)
         if text or photos or documents or attachments:
-            self.send('\n'.join(text), command.sender,
-                      documents=documents, photos=photos, _attachments=attachments)
+            self.send(text, command.sender, documents=documents, photos=photos,
+                      _attachments=attachments)
+        else:
+            self.send('Выполнено', command.sender)
 
     def handle_late(self, command: Command, cid: str):
         return self.handle(command, late_cid=cid)
