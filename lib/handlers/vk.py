@@ -9,11 +9,12 @@ import io
 import json
 
 class VkHandler(Handler):
-    def __init__(self, token, secret):
+    def __init__(self, token, secret, default_room):
         super().__init__(answer_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT, Type.VK_KEYBOARD},
                          arg_types={Type.TEXT, Type.PHOTO, Type.DOCUMENT})
         self.secret = secret
         self.token = token
+        self.default_room = default_room
         self.vk_session = vk_api.VkApi(token=self.token)
         self.vk = self.vk_session.get_api()
         self.aliases = {}
@@ -164,7 +165,7 @@ class VkHandler(Handler):
 
             if carousel and _photo_attachments and len(command.answers) > 1 and not late_cid:
                 for att in _photo_attachments:
-                    command_prefix = '' if answer_room == '410' else f'k{answer_room} '
+                    command_prefix = '' if answer_room == self.default_room else f'k{answer_room} '
                     command_prefix += f'{cid} '
                     _element = {
                         'photo_id': att,

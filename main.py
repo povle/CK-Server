@@ -22,7 +22,7 @@ commands = set()
 connected = {}
 
 alice_handler = AliceHandler()
-vk_handler = VkHandler(config.vk_token, config.vk_secret)
+vk_handler = VkHandler(config.vk_token, config.vk_secret, config.default_room)
 direct_handler = DirectHandler(config.direct_token)
 
 def get_ip():
