@@ -52,8 +52,8 @@ class AliceHandler(Handler):
                 ids.append(str(ent['value']))
 
         tokens = nlu['tokens']
-        broadcast = 'все' in tokens or 'всех' in tokens
         excepts_present = 'кроме' in tokens
+        broadcast = 'все' in tokens or 'всех' in tokens or not ids or excepts_present
 
         action = ' '.join([x for x in tokens if x not in ids+['все', 'всех', 'кроме', 'и', 'на']])
 
