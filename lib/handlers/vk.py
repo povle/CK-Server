@@ -223,7 +223,7 @@ class VkHandler(Handler):
             room = 'default'
 
         if r.group('ids') is not None:
-            ids = r.group('ids').split()
+            ids = [x.casefold() for x in r.group('ids').split()]
         else:
             ids = []
 
