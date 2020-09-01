@@ -189,6 +189,8 @@ class VkHandler(Handler):
                           photos=_photos, keyboard=keyboard,
                           _attachments=_attachments)
             else:
+                if not _text:
+                    _text = 'Выполнено'
                 text.append(_prefix + _text)
                 photos += _photos
                 documents += _documents
@@ -201,8 +203,6 @@ class VkHandler(Handler):
         if text or photos or documents or attachments:
             self.send(text, command.sender, documents=documents, photos=photos,
                       _attachments=attachments)
-        else:
-            self.send('Выполнено', command.sender)
 
     def handle_late(self, command: Command, cid: str):
         return self.handle(command, late_cid=cid)
