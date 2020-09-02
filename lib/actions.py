@@ -28,7 +28,7 @@ actions = [
     Action('sleep', description="перевести компьютер в режим сна"),
     Action('logout', description="выйти из пользователя"),
     Action('scr', arg_types={Type.TEXT}, answer_types={Type.PHOTO, Type.DOCUMENT},
-           description="сделать скриншот, scr -d - скриншот документом"),
+           description="сделать скриншот, scr -d - скриншот документом", timeout=20),
     Action('screen_off', description="отключить экран"),
     Action('screen_on', description="включить экран"),
     Action('wallpaper', arg_types={Type.PHOTO},
