@@ -45,6 +45,7 @@ def make_command(handler: Handler, raw: dict):
     if not command.ready_for_dispatch:
         command.to = config.rooms[command.room]
     command.complete_event = socketio.server.eio.create_event()
+    logger.info(f'parsed by {handler}: {str(command.to_dict())[:4096]}')
     return command
 
 def handle_dispatch(command):
