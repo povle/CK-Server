@@ -196,8 +196,10 @@ class VkHandler(Handler):
                 documents += _documents
                 attachments += _attachments
 
-        if carousel and carousel_elements:
-            self.send('Изображения:', command.sender, template={'type': 'carousel', 'elements': carousel_elements})
+        if carousel:
+            while carousel_elements:
+                self.send('Изображения:', command.sender, template={'type': 'carousel', 'elements': carousel_elements[:10]})
+                carousel_elements = carousel_elements[10:]
 
         text = '\n'.join(text)
         if text or photos or documents or attachments:
