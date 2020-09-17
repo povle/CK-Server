@@ -35,10 +35,10 @@ def handle_bad_request(e):
 
 @socketio.on_error_default
 def default_error_handler(e):
-    logger.error(f"{e} {request.event} {get_ip()} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
+    logger.error(f"{e} {str(request.event)[:4096]} {get_ip()} {''.join(traceback.TracebackException.from_exception(e).format())}".replace('\n', r'\n'))
 
 def make_command(handler: Handler, raw: dict):
-    logger.info(f'handled by {handler}: {get_ip()} {safe_raw(raw)}')
+    logger.info(f'handled by {handler}: {get_ip()} {str(safe_raw(raw))[:4096]}')
     command = handler.parse(raw)
     if command.room == 'default':
         command.room = config.default_room
