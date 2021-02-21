@@ -3,3 +3,4 @@ flask-socketio
 gunicorn
 gevent-websocket
 bcrypt
+vk-api
